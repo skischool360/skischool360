@@ -4,6 +4,13 @@ Rails.application.configure do
   # In the development environment your application's code is reloaded on
   # every request. This slows down response time but is perfect for development
   # since you don't have to restart the web server when you make code changes.
+
+  #set queue adapter for delayed jobs
+  config.active_job.queue_adapter = :delayed_job
+
+  #show additional error messages raised in callbacks
+  config.active_record.raise_in_transactional_callbacks = true
+
   config.cache_classes = false
 
   # Do not eager load code on boot.
@@ -11,15 +18,28 @@ Rails.application.configure do
 
   # Show full error reports and disable caching.
   config.consider_all_requests_local       = true
-  config.action_controller.perform_caching = false
+
+
+  if Rails.root.join('tmp/caching-dev.txt').exist?
+     config.action_controller.perform_caching = true
+     config.cache_store = :memory_store
+     config.public_file_server.headers = {
+       'Cache-Control' => 'public, max-age=172800'
+     }
+  else
+     config.action_controller.perform_caching = false
+
+     config.cache_store = :null_store
+  end
 
   # Don't care if the mailer can't send.
   config.action_mailer.raise_delivery_errors = false
 
+  # config.action_mailer.perform_caching = false
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 
-  # Raise an error on page load if there are pending migrations.
+  # Raise an error on page load if there are pending migrations
   config.active_record.migration_error = :page_load
 
   # Debug mode disables concatenation and preprocessing of assets.
@@ -27,15 +47,33 @@ Rails.application.configure do
   # number of complex assets.
   config.assets.debug = true
 
-  # Asset digests allow you to set far-future HTTP expiration dates on all assets,
-  # yet still be able to expire them through the digest params.
-  config.assets.digest = true
+  #Suppress logger output for asset requests
+  config.assets.quiet = true
+  #GMAIL CONFIG
+  config.action_mailer.default_url_options = { :host => ENV['HOST_DOMAIN'] }
+  config.action_mailer.delivery_method = :smtp
+  #during dev testing, uncomment the ENV variable below to disable Twilio messages
+  # ENV['twilio_status'] = "inactive"
+  # config.action_mailer.perform_deliveries = false
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.default :charset => "utf-8"
+  config.action_mailer.smtp_settings = {
+    address: "smtp.gmail.com",
+    port: 587,
+    domain: "skischool360.com",
+    authentication: "plain",
+    enable_starttls_auto: true,
+    user_name: "brian@skischool360.com",
+    password: ENV["GMAIL_PASSWORD"]
+  }
+  #PAPERCLIP AWS S3 CONFIG
+  config.paperclip_defaults = {
+  :storage => :s3,
+  :s3_region => ENV['AWS_REGION'],
+  :s3_host_name => 's3.amazonaws.com',
+  :bucket => 'skischool360'
+  }
 
-  # Adds additional error checking when serving assets at runtime.
-  # Checks for improperly declared sprockets dependencies.
-  # Raises helpful error messages.
-  config.assets.raise_runtime_errors = true
-
-  # Raises error for missing translations
-  # config.action_view.raise_on_missing_translations = true
+  # config.file_watcher = ActiveSupport::EventedFileUpdateChecker
 end
